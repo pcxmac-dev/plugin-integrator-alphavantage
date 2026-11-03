@@ -1,0 +1,25 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "liminal-plugin-alphavantage"
+version = "1.0.0"  # the plugin's own release (CHANGELOG.md); the app shows it on the Plugins view
+description = "Alpha Vantage for Liminal: daily bars of stocks listed in London, Toronto, TSX Venture, Xetra, BSE, Shanghai and Shenzhen on a free key, the latest 100 days a request."
+readme = "README.md"
+requires-python = ">=3.10"
+# the library it plugs into (plugin API 1.12: Provider.exchanges, liminal-lib 1.2.0); which app releases can
+# load it is the plugin API the plugin declares (PLUGIN.api, checked when the app loads it), not this line
+dependencies = ["liminal-lib>=1.2.0"]
+
+[project.optional-dependencies]
+dev = ["pytest>=8"]
+
+[project.entry-points."liminal.providers"]
+alphavantage = "liminal_plugin_alphavantage"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
