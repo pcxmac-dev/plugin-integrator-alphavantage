@@ -14,8 +14,10 @@ from liminal_lib import composite, freshness, killswitch
 from liminal_lib.collector import history_floor
 from liminal_lib.config import load_settings
 from liminal_lib.errors import BudgetExhausted, NotEntitled, RateLimited, SourceError
+from liminal_lib.freshness import Delay
 from liminal_lib.sources import feed_profiles, is_archive, markets, provider, rate_window, registry, supports
 from liminal_lib.sources.archive import ET, ms
+from liminal_lib.sources.registry import FeedPlugin
 from liminal_lib.symbols import resolve
 
 import liminal_plugin_alphavantage as av
@@ -219,11 +221,11 @@ def test_the_app_loads_it_from_this_package_with_its_own_version():
     assert p is not None, dict(registry.errors())
     assert p.origin in {"package: liminal-plugin-alphavantage (liminal_plugin_alphavantage)",
                         "plugins/liminal-plugin-alphavantage (liminal_plugin_alphavantage)"}  # its package, or its checkout in the workspace's plugin directory
-    assert p.version == version("liminal-plugin-alphavantage") and p.api == "1.12" and av.PLUGIN.version == ""
+    assert p.version == version("liminal-plugin-alphavantage") and p.api == "2.0" and av.PLUGIN.version == ""
     assert registry.api_refusal(p.api) is None
     assert not [why for where, why in registry.errors() if "alphavantage" in where or "alphavantage" in why]
     row = {r["name"]: r for r in registry.menu()}["alphavantage"]
-    assert (row["version"], row["api"], row["archive"], row["assets"]) == (version("liminal-plugin-alphavantage"), "1.12", False, ["stock"])
+    assert (row["version"], row["api"], row["archive"], row["assets"]) == (version("liminal-plugin-alphavantage"), "2.0", False, ["stock"])
     assert [k["name"] for k in row["keys"]] == ["ALPHAVANTAGE_API_KEY"] and row["keys"][0]["secret"] and "alphavantage.co" in row["signup"]
     assert registry.plugin_feeds("alphavantage") == ["alphavantage"] and registry.plugin_of("alphavantage") == "alphavantage"
     assert "ALPHAVANTAGE_API_KEY" in registry.variables()
@@ -256,13 +258,28 @@ def test_it_keeps_its_facts(monkeypatch):
     held = []
     monkeypatch.setattr(av, "limiter", lambda name, st, key: held.append(("window", name, key)))
     monkeypatch.setattr(av, "machine_caps", lambda client, name, st, key: held.append(("day", name, key)) or client)
-    source = av.build(s, 5)
+    source = av.PLUGIN.build(s, 5)
     assert held == [("window", "alphavantage", "k"), ("day", "alphavantage", "k")]  # the window and the day's cap under its name and key
     assert source.name == "alphavantage" and source.has_key and source.client.key == "k" and source.client.request_budget == 5
     assert source.client.base_url == "https://www.alphavantage.co" and not source.archival
-    assert not av.build(load_settings(env={}, env_file=None), 5).has_key
+    assert not av.PLUGIN.build(load_settings(env={}, env_file=None), 5).has_key
     report = p.report(profile, date(2026, 11, 2), s)
     assert report.plan == "alphavantage-free" and report.keys_set and report.limits.per_day == 25 and report.limits.rate == (5, 62.0)
     assert [(c.asset, c.resolution, c.market, str(c.since), c.per_request) for c in report.capabilities] == [
         ("stock", "day", "alphavantage", "2026-07-25", 100)]
     assert report.kind == "vendor" and not report.notes  # not an archive
+
+
+def test_it_is_a_class_on_plugin_api_2_0():
+    """The plugin is an instance of its class (plugin API 2.0, liminal-lib 1.3.0): what it declares its class
+    attributes, what it does its methods; the registry loads it as that class."""
+    assert isinstance(av.PLUGIN, av.AlphaVantagePlugin) and isinstance(av.PLUGIN, FeedPlugin)
+    assert av.PLUGIN.api == "2.0" and not av.PLUGIN.is_record
+    p = registry.reload()["alphavantage"]
+    assert type(p) is av.AlphaVantagePlugin and p.api == "2.0" and p.name == "alphavantage"
+    # the hooks it gives, the rest the contract's defaults
+    assert p.gives("build") and p.gives("has_keys") and p.gives("rate") and p.gives("markets")
+    assert not p.gives("view") and not p.gives("scan") and not p.gives("carries") and not p.has_settings
+    # it declares its plan's publication delay itself, the library's row for it still in place
+    assert p.delays == {"alphavantage-free": {"stock": Delay("eod")}}
+    assert p.delays["alphavantage-free"] == freshness.PLAN_DELAYS["alphavantage-free"]

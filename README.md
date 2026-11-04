@@ -34,7 +34,7 @@ A Liminal provider plugin released on its own. The app finds it through the entr
 Into the app's environment, from the app's folder:
 
 ```powershell
-.venv\Scripts\python.exe -m pip install "liminal-plugin-alphavantage @ git+https://github.com/pcxmac-dev/liminal-plugin-alphavantage@v1.0.0"
+.venv\Scripts\python.exe -m pip install "liminal-plugin-alphavantage @ git+https://github.com/pcxmac-dev/liminal-plugin-alphavantage@v0.2.0"
 ```
 
 or with the app's plugins (`pip install -e ".[plugins]"` in liminal-app). The app loads it on its next
@@ -57,9 +57,10 @@ spent, or a premium endpoint) stops the run until the next; neither is ever take
 
 ## Compatibility
 
-It is written for plugin API 1.12 (`PLUGIN.api`: the exchanges a feed carries, `Provider.exchanges`;
-liminal-lib 1.2.0 or later). An app offering 1.12 or a later 1.x loads it; an app of another major, or one
-older than 1.12, leaves it out and says why on the Plugins view.
+It is written for plugin API 2.0, the class contract (`PLUGIN`, an instance of `AlphaVantagePlugin`, a
+`FeedPlugin`: the exchanges a feed carries, `exchanges`, and its plan's publication delay, `delays`;
+liminal-lib 1.3.0 or later). An app offering 2.0 or a later 2.x loads it; an app of another major leaves it
+out and says why on the Plugins view.
 
 ## Develop
 

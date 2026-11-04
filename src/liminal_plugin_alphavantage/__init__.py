@@ -4,10 +4,12 @@ Shenzhen), on a free key: TIME_SERIES_DAILY with outputsize=compact, the latest 
 request, the stored series growing by the new days of each run. Stocks only (the plan's decision,
 2026-11-02: Twelve Data is the FX addition).
 
-A Liminal plugin released on its own (liminal_lib.sources.registry: Provider), registered under the entry
-point group `liminal.providers` as `alphavantage` (PLUGIN: one feed). It relies on plugin API 1.12
-(Provider.exchanges: a listing abroad comes to it and to no US feed) and nothing of the app outside it; its
-version is this distribution's (pyproject.toml), so the record's version is left empty.
+A Liminal plugin released on its own, registered under the entry point group `liminal.providers` as
+`alphavantage` (PLUGIN: one feed, an instance of `AlphaVantagePlugin` on the class contract, plugin API 2.0,
+liminal-lib 1.3.0: liminal_lib.sources.plugin.FeedPlugin; what it declares its class attributes, what it does
+its methods). It relies on the contract (`exchanges`: a listing abroad comes to it and to no US feed; `delays`:
+its plan's publication delay) and nothing of the app outside it; its version is this distribution's
+(pyproject.toml), so the instance's version is left empty.
 
 Checked against the documentation page (https://www.alphavantage.co/documentation/, read 2026-11-02, no key
 sent): TIME_SERIES_DAILY takes function, symbol, outputsize (compact, the default, "returns only the latest
@@ -26,7 +28,8 @@ the first real requests confirm them."""
 from __future__ import annotations
 
 from liminal_lib.config import Tier
-from liminal_lib.sources.registry import KeyVar, Provider, limiter, machine_caps
+from liminal_lib.freshness import Delay
+from liminal_lib.sources.registry import FeedPlugin, KeyVar, limiter, machine_caps
 from .client import API, KEY, SUFFIXES, AlphaVantageClient, AlphaVantageSource, av_symbol, stored_ticker  # noqa: F401
 
 NAME = "alphavantage"
@@ -44,27 +47,47 @@ def api_key(settings) -> str | None:
     return (settings.env.get(KEY) or "").strip() or None
 
 
-def build(settings, request_budget):
-    key = api_key(settings)
-    client = AlphaVantageClient(key, request_budget=request_budget, rate_limiter=limiter(NAME, settings, key))
-    return AlphaVantageSource(machine_caps(client, NAME, settings, key), has_key=bool(key))
+class AlphaVantagePlugin(FeedPlugin):
+    """The feed as a class (plugin API 2.0): what it declares its class attributes, what it does its methods
+    (`build`: its source on a keyed client; `has_keys`, `rate`, `markets`), the rest the contract's defaults."""
+
+    api = "2.0"  # the contract it needs (the class contract: exchanges, delays); its version: the distribution's
+    name = NAME
+    title = "Alpha Vantage"
+    assets = frozenset({"stock"})
+    order = 120
+    about = ("daily bars of stocks on London, Toronto, TSX Venture, Xetra, BSE, Shanghai and Shenzhen, "
+             "the latest 100 days a request (a free key)")
+    keys = (KeyVar(KEY, hint="the free key alphavantage.co sent you"),)
+    signup = "alphavantage.co/support/#api-key: a free key, claimed with an email address"
+    exchanges = frozenset(SUFFIXES)  # XLON, XTSE, XTSX, XETR, XBOM, XSHG, XSHE: the ones with a suffix of its own
+    archival = False
+    tier = TIER
+    per_run, per_day = PER_RUN, PER_DAY
+    limits = ("free: 25 requests a day (the latest 100 days a request; the whole history, outputsize=full, "
+              "is a premium plan's)")
+    kind = "vendor"
+    provides = {"stock": ("day",)}
+    per_request = {"day": 100}  # one request: the latest 100 trading days
+    bulk_resolution = "day"
+    missing_keys_note = "key not set: Alpha Vantage's daily bars come with ALPHAVANTAGE_API_KEY (a free key)"
+    # when its data is published (the library's freshness.PLAN_DELAYS row for alphavantage-free, declared here
+    # too): a day's bar once the exchange's session is over, end of day
+    delays = {"alphavantage-free": {"stock": Delay("eod")}}
+
+    def build(self, settings, request_budget):
+        key = api_key(settings)
+        client = AlphaVantageClient(key, request_budget=request_budget, rate_limiter=limiter(self.name, settings, key))
+        return AlphaVantageSource(machine_caps(client, self.name, settings, key), has_key=bool(key))
+
+    def has_keys(self, settings):
+        return bool(api_key(settings))
+
+    def rate(self, settings):
+        return RATE
+
+    def markets(self, settings):
+        return {"stock": self.name}
 
 
-PLUGIN = Provider(
-    api="1.12",  # the contract it needs (Provider.exchanges); its version: the distribution's
-    name=NAME, title="Alpha Vantage", build=build, assets=frozenset({"stock"}), order=120,
-    about="daily bars of stocks on London, Toronto, TSX Venture, Xetra, BSE, Shanghai and Shenzhen, "
-          "the latest 100 days a request (a free key)",
-    keys=(KeyVar(KEY, hint="the free key alphavantage.co sent you"),),
-    signup="alphavantage.co/support/#api-key: a free key, claimed with an email address",
-    exchanges=frozenset(SUFFIXES),  # XLON, XTSE, XTSX, XETR, XBOM, XSHG, XSHE: the ones with a suffix of its own
-    archival=False, tier=TIER, per_run=PER_RUN, per_day=PER_DAY,
-    limits="free: 25 requests a day (the latest 100 days a request; the whole history, outputsize=full, "
-           "is a premium plan's)",
-    kind="vendor", markets=lambda settings: {"stock": NAME},
-    provides={"stock": ("day",)}, per_request={"day": 100},  # one request: the latest 100 trading days
-    bulk_resolution="day",
-    has_keys=lambda s: bool(api_key(s)),
-    missing_keys_note="key not set: Alpha Vantage's daily bars come with ALPHAVANTAGE_API_KEY (a free key)",
-    rate=lambda settings: RATE,
-)
+PLUGIN = AlphaVantagePlugin()
