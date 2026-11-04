@@ -6,7 +6,7 @@ request, the stored series growing by the new days of each run. Stocks only (the
 
 A Liminal plugin released on its own, registered under the entry point group `liminal.providers` as
 `alphavantage` (PLUGIN: one feed, an instance of `AlphaVantagePlugin` on the class contract, plugin API 2.0,
-liminal-lib 1.3.0: liminal_lib.sources.plugin.FeedPlugin; what it declares its class attributes, what it does
+liminal-libs 1.3.0: liminal_libs.sources.plugin.FeedPlugin; what it declares its class attributes, what it does
 its methods). It relies on the contract (`exchanges`: a listing abroad comes to it and to no US feed; `delays`:
 its plan's publication delay) and nothing of the app outside it; its version is this distribution's
 (pyproject.toml), so the instance's version is left empty.
@@ -27,9 +27,9 @@ whether SYMBOL_SEARCH matches a keyword with the suffix on (the bare code is ask
 the first real requests confirm them."""
 from __future__ import annotations
 
-from liminal_lib.config import Tier
-from liminal_lib.freshness import Delay
-from liminal_lib.sources.registry import FeedPlugin, KeyVar, limiter, machine_caps
+from liminal_libs.config import Tier
+from liminal_libs.freshness import Delay
+from liminal_libs.sources.registry import FeedPlugin, KeyVar, limiter, machine_caps
 from .client import API, KEY, SUFFIXES, AlphaVantageClient, AlphaVantageSource, av_symbol, stored_ticker  # noqa: F401
 
 NAME = "alphavantage"

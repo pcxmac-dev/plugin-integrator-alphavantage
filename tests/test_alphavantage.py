@@ -10,19 +10,19 @@ from importlib.metadata import version
 import pytest
 import requests
 
-from liminal_lib import composite, freshness, killswitch
-from liminal_lib.collector import history_floor
-from liminal_lib.config import load_settings
-from liminal_lib.errors import BudgetExhausted, NotEntitled, RateLimited, SourceError
-from liminal_lib.freshness import Delay
-from liminal_lib.sources import feed_profiles, is_archive, markets, provider, rate_window, registry, supports
-from liminal_lib.sources.archive import ET, ms
-from liminal_lib.sources.registry import FeedPlugin
-from liminal_lib.symbols import resolve
+from liminal_libs import composite, freshness, killswitch
+from liminal_libs.collector import history_floor
+from liminal_libs.config import load_settings
+from liminal_libs.errors import BudgetExhausted, NotEntitled, RateLimited, SourceError
+from liminal_libs.freshness import Delay
+from liminal_libs.sources import feed_profiles, is_archive, markets, provider, rate_window, registry, supports
+from liminal_libs.sources.archive import ET, ms
+from liminal_libs.sources.registry import FeedPlugin
+from liminal_libs.symbols import resolve
 
-import liminal_plugin_alphavantage as av
-from liminal_plugin_alphavantage import PER_DAY, PER_RUN, TIER
-from liminal_plugin_alphavantage.client import (CACHE_SECONDS, SERIES, SUFFIXES, AlphaVantageClient, AlphaVantageSource,
+import plugin_integrator_alphavantage as av
+from plugin_integrator_alphavantage import PER_DAY, PER_RUN, TIER
+from plugin_integrator_alphavantage.client import (CACHE_SECONDS, SERIES, SUFFIXES, AlphaVantageClient, AlphaVantageSource,
                                                 av_symbol, read_daily, scrubbed, stored_ticker)
 
 from .conftest import FakeResponse, FakeSession
@@ -219,13 +219,13 @@ def test_the_app_loads_it_from_this_package_with_its_own_version():
     assert av.PLUGIN.name == "alphavantage" and not hasattr(av, "PLUGINS")
     p = registry.get("alphavantage")
     assert p is not None, dict(registry.errors())
-    assert p.origin in {"package: liminal-plugin-alphavantage (liminal_plugin_alphavantage)",
-                        "plugins/liminal-plugin-alphavantage (liminal_plugin_alphavantage)"}  # its package, or its checkout in the workspace's plugin directory
-    assert p.version == version("liminal-plugin-alphavantage") and p.api == "2.0" and av.PLUGIN.version == ""
+    assert p.origin in {"package: plugin-integrator-alphavantage (plugin_integrator_alphavantage)",
+                        "plugins/plugin-integrator-alphavantage (plugin_integrator_alphavantage)"}  # its package, or its checkout in the workspace's plugin directory
+    assert p.version == version("plugin-integrator-alphavantage") and p.api == "2.0" and av.PLUGIN.version == ""
     assert registry.api_refusal(p.api) is None
     assert not [why for where, why in registry.errors() if "alphavantage" in where or "alphavantage" in why]
     row = {r["name"]: r for r in registry.menu()}["alphavantage"]
-    assert (row["version"], row["api"], row["archive"], row["assets"]) == (version("liminal-plugin-alphavantage"), "2.0", False, ["stock"])
+    assert (row["version"], row["api"], row["archive"], row["assets"]) == (version("plugin-integrator-alphavantage"), "2.0", False, ["stock"])
     assert [k["name"] for k in row["keys"]] == ["ALPHAVANTAGE_API_KEY"] and row["keys"][0]["secret"] and "alphavantage.co" in row["signup"]
     assert registry.plugin_feeds("alphavantage") == ["alphavantage"] and registry.plugin_of("alphavantage") == "alphavantage"
     assert "ALPHAVANTAGE_API_KEY" in registry.variables()
@@ -271,7 +271,7 @@ def test_it_keeps_its_facts(monkeypatch):
 
 
 def test_it_is_a_class_on_plugin_api_2_0():
-    """The plugin is an instance of its class (plugin API 2.0, liminal-lib 1.3.0): what it declares its class
+    """The plugin is an instance of its class (plugin API 2.0, liminal-libs 1.3.0): what it declares its class
     attributes, what it does its methods; the registry loads it as that class."""
     assert isinstance(av.PLUGIN, av.AlphaVantagePlugin) and isinstance(av.PLUGIN, FeedPlugin)
     assert av.PLUGIN.api == "2.0" and not av.PLUGIN.is_record

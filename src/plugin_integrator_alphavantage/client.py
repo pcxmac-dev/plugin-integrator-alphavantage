@@ -8,10 +8,10 @@ import time
 from datetime import date, datetime
 from typing import Callable, Iterator, Mapping
 
-from liminal_lib.errors import BudgetExhausted, NotEntitled, RateLimited, SourceError
-from liminal_lib.models import ETF, Exchange, Instrument, Stock, country, exchange_name, listing_ticker, suffix_mic, venue
-from liminal_lib.sources.archive import ET, Archive, bounds, ms
-from liminal_lib.sources.http import PublicClient
+from liminal_libs.errors import BudgetExhausted, NotEntitled, RateLimited, SourceError
+from liminal_libs.models import ETF, Exchange, Instrument, Stock, country, exchange_name, listing_ticker, suffix_mic, venue
+from liminal_libs.sources.archive import ET, Archive, bounds, ms
+from liminal_libs.sources.http import PublicClient
 
 API = "https://www.alphavantage.co"
 KEY = "ALPHAVANTAGE_API_KEY"  # a free alphavantage.co key, a user environment variable (the app's Plugins view)
