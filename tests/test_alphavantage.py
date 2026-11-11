@@ -214,6 +214,18 @@ def test_the_key_never_shows_in_an_error():
     assert isinstance(scrubbed(NotEntitled(403, "no SECRET123"), "SECRET123"), NotEntitled)
 
 
+def own_version(origin: str) -> str:
+    """This distribution's version as the registry read it: its checkout's pyproject.toml when loaded from the
+    workspace's plugin directory, else the installed package's (an editable install's record keeps the version it
+    was installed at until it is installed again)."""
+    if origin.startswith("plugins/"):
+        import tomllib
+        from pathlib import Path
+
+        return tomllib.loads((Path(__file__).parents[1] / "pyproject.toml").read_text(encoding="utf-8"))["project"]["version"]
+    return version("plugin-integrator-alphavantage")
+
+
 def test_the_app_loads_it_from_this_package_with_its_own_version():
     registry.reload()
     assert av.PLUGIN.name == "alphavantage" and not hasattr(av, "PLUGINS")
@@ -221,11 +233,11 @@ def test_the_app_loads_it_from_this_package_with_its_own_version():
     assert p is not None, dict(registry.errors())
     assert p.origin in {"package: plugin-integrator-alphavantage (plugin_integrator_alphavantage)",
                         "plugins/plugin-integrator-alphavantage (plugin_integrator_alphavantage)"}  # its package, or its checkout in the workspace's plugin directory
-    assert p.version == version("plugin-integrator-alphavantage") and p.api == "2.0" and av.PLUGIN.version == ""
+    assert p.version == own_version(p.origin) and p.api == "2.2" and av.PLUGIN.version == ""
     assert registry.api_refusal(p.api) is None
     assert not [why for where, why in registry.errors() if "alphavantage" in where or "alphavantage" in why]
     row = {r["name"]: r for r in registry.menu()}["alphavantage"]
-    assert (row["version"], row["api"], row["archive"], row["assets"]) == (version("plugin-integrator-alphavantage"), "2.0", False, ["stock"])
+    assert (row["version"], row["api"], row["archive"], row["assets"]) == (own_version(p.origin), "2.2", False, ["stock"])
     assert [k["name"] for k in row["keys"]] == ["ALPHAVANTAGE_API_KEY"] and row["keys"][0]["secret"] and "alphavantage.co" in row["signup"]
     assert registry.plugin_feeds("alphavantage") == ["alphavantage"] and registry.plugin_of("alphavantage") == "alphavantage"
     assert "ALPHAVANTAGE_API_KEY" in registry.variables()
@@ -270,13 +282,13 @@ def test_it_keeps_its_facts(monkeypatch):
     assert report.kind == "vendor" and not report.notes  # not an archive
 
 
-def test_it_is_a_class_on_plugin_api_2_0():
-    """The plugin is an instance of its class (plugin API 2.0, liminal-libs 1.3.0): what it declares its class
-    attributes, what it does its methods; the registry loads it as that class."""
+def test_it_is_a_class_on_plugin_api_2_2():
+    """The plugin is an instance of its class (plugin API 2.0, liminal-libs 1.3.0; its API's card since 2.2): what it
+    declares its class attributes, what it does its methods; the registry loads it as that class."""
     assert isinstance(av.PLUGIN, av.AlphaVantagePlugin) and isinstance(av.PLUGIN, FeedPlugin)
-    assert av.PLUGIN.api == "2.0" and not av.PLUGIN.is_record
+    assert av.PLUGIN.api == "2.2" and not av.PLUGIN.is_record
     p = registry.reload()["alphavantage"]
-    assert type(p) is av.AlphaVantagePlugin and p.api == "2.0" and p.name == "alphavantage"
+    assert type(p) is av.AlphaVantagePlugin and p.api == "2.2" and p.name == "alphavantage"
     # the hooks it gives, the rest the contract's defaults
     assert p.gives("build") and p.gives("has_keys") and p.gives("rate") and p.gives("markets")
     assert not p.gives("view") and not p.gives("scan") and not p.gives("carries") and not p.has_settings

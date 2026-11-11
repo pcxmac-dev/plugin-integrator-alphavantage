@@ -1,5 +1,20 @@
 # Changelog
 
+## 0.3.0 (2026-11-11)
+
+Its API on its page (plugin API 2.2, liminal-libs 1.49.0; the user: "each plugin should reflect the the API its
+attached to, and present links that provide documentation, the plugin interface should more or less contain what it
+already has, BUT, it should also expose more of what the API is about"). The feed declares a card (`apis`, from
+`apis.py`: `ALPHA_VANTAGE`), Alpha Vantage's API as its pages said on 2026-11-11: what it is and for, its one query
+address, the key's form, its limits (25 requests a day on the free key; premium 75 to 1,200 a minute) and premium
+prices, and its pages (the documentation, support, premium, the free key's form, the terms; it has no status page).
+Its 10 parts, the documentation's sections, say which is used here (the core stock APIs); its 22 functions the 2
+called here, `TIME_SERIES_DAILY` and `SYMBOL_SEARCH`, beside the notable others, the premium ones marked (the
+company overview, news and sentiment and the options among them). `signup` is the
+free key's form's address (a link on the Plugins view). `api_facts` says nothing (the contract's): the plugin holds
+no run's state. Tests: the card names every function the plugin calls and none it does not; every address on it
+answers (with `LIMINAL_VENDOR_PAGES=1`). Nothing it fetches changed. Requires liminal-libs 1.49.0.
+
 ## 0.2.0 (2026-11-03)
 
 Renamed `plugin-integrator-alphavantage` (the package `plugin_integrator_alphavantage`; it was `liminal-plugin-alphavantage`) on 2026-11-03: the naming by system (plugins are `plugin-<app>-<name>`), on liminal-libs 1.4.0 (`liminal_libs`, the library renamed with it).

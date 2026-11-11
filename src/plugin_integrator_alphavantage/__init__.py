@@ -5,11 +5,16 @@ request, the stored series growing by the new days of each run. Stocks only (the
 2026-11-02: Twelve Data is the FX addition).
 
 A Liminal plugin released on its own, registered under the entry point group `liminal.providers` as
-`alphavantage` (PLUGIN: one feed, an instance of `AlphaVantagePlugin` on the class contract, plugin API 2.0,
-liminal-libs 1.3.0: liminal_libs.sources.plugin.FeedPlugin; what it declares its class attributes, what it does
+`alphavantage` (PLUGIN: one feed, an instance of `AlphaVantagePlugin` on the class contract, plugin API 2.2,
+liminal-libs 1.49.0: liminal_libs.sources.plugin.FeedPlugin; what it declares its class attributes, what it does
 its methods). It relies on the contract (`exchanges`: a listing abroad comes to it and to no US feed; `delays`:
-its plan's publication delay) and nothing of the app outside it; its version is this distribution's
-(pyproject.toml), so the instance's version is left empty.
+its plan's publication delay; `apis`: what it attaches to) and nothing of the app outside it; its version is this
+distribution's (pyproject.toml), so the instance's version is left empty.
+
+What it attaches to (plugin API 2.2, `apis`: the card in apis.py): Alpha Vantage's API, its documentation, support,
+premium and key pages, every section of its documentation said used here or not, and its functions, the two called
+here first. What it learned of the API while it ran it does not say (api_facts, the contract's: nothing): the instance
+holds no run's state, the requests of a run are its client's and the machine's ledgers'.
 
 Checked against the documentation page (https://www.alphavantage.co/documentation/, read 2026-11-02, no key
 sent): TIME_SERIES_DAILY takes function, symbol, outputsize (compact, the default, "returns only the latest
@@ -30,6 +35,7 @@ from __future__ import annotations
 from liminal_libs.config import Tier
 from liminal_libs.freshness import Delay
 from liminal_libs.sources.registry import FeedPlugin, KeyVar, limiter, machine_caps
+from .apis import APIS, KEY_PAGE
 from .client import API, KEY, SUFFIXES, AlphaVantageClient, AlphaVantageSource, av_symbol, stored_ticker  # noqa: F401
 
 NAME = "alphavantage"
@@ -49,9 +55,10 @@ def api_key(settings) -> str | None:
 
 class AlphaVantagePlugin(FeedPlugin):
     """The feed as a class (plugin API 2.0): what it declares its class attributes, what it does its methods
-    (`build`: its source on a keyed client; `has_keys`, `rate`, `markets`), the rest the contract's defaults."""
+    (`build`: its source on a keyed client; `has_keys`, `rate`, `markets`), the rest the contract's defaults; what
+    it attaches to (2.2: `apis`)."""
 
-    api = "2.0"  # the contract it needs (the class contract: exchanges, delays); its version: the distribution's
+    api = "2.2"  # the contract it needs (the class contract: exchanges, delays; its API's card); its version: the distribution's
     name = NAME
     title = "Alpha Vantage"
     assets = frozenset({"stock"})
@@ -59,7 +66,8 @@ class AlphaVantagePlugin(FeedPlugin):
     about = ("daily bars of stocks on London, Toronto, TSX Venture, Xetra, BSE, Shanghai and Shenzhen, "
              "the latest 100 days a request (a free key)")
     keys = (KeyVar(KEY, hint="the free key alphavantage.co sent you"),)
-    signup = "alphavantage.co/support/#api-key: a free key, claimed with an email address"
+    signup = KEY_PAGE  # the support page's form, where a free key is claimed with an email address (the card's console link)
+    apis = APIS  # Alpha Vantage's API (apis.py)
     exchanges = frozenset(SUFFIXES)  # XLON, XTSE, XTSX, XETR, XBOM, XSHG, XSHE: the ones with a suffix of its own
     archival = False
     tier = TIER
