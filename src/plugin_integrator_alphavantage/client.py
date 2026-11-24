@@ -73,6 +73,15 @@ def checked(body, what: str) -> dict:
     return body
 
 
+def unkeyed(body, key: str | None):
+    """An answer with the key taken out of its words (the top level's text: Note, Information, message), before
+    anything of it can become an error's message: a vendor's own words about a limit can repeat the key it was asked
+    with (the review of 2026-11-21, item 26: the scrub covered only errors of the transport)."""
+    if not key or not isinstance(body, dict):
+        return body
+    return {k: (v.replace(key, "<key>") if isinstance(v, str) else v) for k, v in body.items()}
+
+
 def scrubbed(e: SourceError, key: str) -> SourceError:
     """The error with the key taken out of its text (a failed connection's error repeats the URL asked,
     the apikey parameter in it); the same error when it is clean."""
@@ -121,7 +130,7 @@ class AlphaVantageClient(PublicClient):
             body = self.get("/query", {"function": function, **params, "apikey": self.key})
         except SourceError as e:
             raise scrubbed(e, self.key) from None  # the cause (a connection error) names the URL, the key in it
-        return checked(body, what)
+        return checked(unkeyed(body, self.key), what)
 
 
 class AlphaVantageSource(Archive):

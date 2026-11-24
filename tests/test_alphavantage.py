@@ -295,3 +295,15 @@ def test_it_is_a_class_on_plugin_api_2_2():
     # it declares its plan's publication delay itself, the library's row for it still in place
     assert p.delays == {"alphavantage-free": {"stock": Delay("eod")}}
     assert p.delays["alphavantage-free"] == freshness.PLAN_DELAYS["alphavantage-free"]
+
+
+def test_the_key_never_reaches_an_error_from_alpha_vantages_own_words():
+    """The review of 2026-11-21 (item 26): a 200 answer's Note or Information became the error's message as it was,
+    and Alpha Vantage's limit text has named the key it was asked with ("We have detected your API key as ...")."""
+    for body, kind in (({"Information": "We have detected your API key as SECRETKEY123 and our standard API rate limit "
+                                        "is 25 requests per day."}, BudgetExhausted),
+                       ({"Note": "Your API key SECRETKEY123: 5 calls per minute."}, RateLimited)):
+        src, _ = _source(body, key="SECRETKEY123")
+        with pytest.raises(kind) as raised:
+            next(src.bar_pages("VOD.L", date(2026, 10, 29), date(2026, 10, 30), "day"))
+        assert "SECRETKEY123" not in str(raised.value) and "<key>" in str(raised.value)
